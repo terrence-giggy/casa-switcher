@@ -4,8 +4,18 @@ import mouse
 import ctypes
 import json
 import os
+import logging
 import switch_casa
 from switch_casa import TARGET_PIDS, switch_device_host
+
+# --- Logging Setup ---
+# Clear log on start (filemode='w') and only log errors
+logging.basicConfig(
+    filename='casa_switcher_errors.log',
+    filemode='w',
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 # --- Config ---
 CONFIG_FILE = "config.json"
@@ -21,7 +31,8 @@ def load_config():
             with open(CONFIG_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            print(f"Error loading config: {e}")
+            msg = f"Error loading config: {e}"
+            logging.exception(msg)
     return DEFAULT_CONFIG
 
 config = load_config()
@@ -29,42 +40,43 @@ THIS_HOST = config.get("this_host_id", 1)
 TRIGGER_CORNER = config.get("trigger_corner", "top-right")
 SAFE_CORNER = config.get("safe_corner", "top-left")
 
-print(f"Loaded Config: Host {THIS_HOST}, Trigger: {TRIGGER_CORNER}, Safe: {SAFE_CORNER}")
+logging.info(f"Loaded Config: Host {THIS_HOST}, Trigger: {TRIGGER_CORNER}, Safe: {SAFE_CORNER}")
 
 # Track current host state (We initialize to "this" host because we are running on it)
 # When we switch away, this value changes.
 current_host = THIS_HOST
 
-def switch_all(host_number):
+def switch_all(host_number, release_keys=True):
     global current_host
     current_host = host_number
-    print(f"HotKey Detected: Switching to Host {host_number}...")
     
     # 1. Force-release the modifier keys intentionally.
     # If the keyboard disconnects while these are 'down', Windows thinks they are stuck.
     # We send synthetic 'Key Up' events to the OS before cutting the connection.
-    try:
-        keyboard.release('ctrl')
-        keyboard.release('alt')
-        keyboard.release('left')
-        keyboard.release('right')
-    except Exception:
-        pass
+    if release_keys:
+        try:
+            keyboard.release('ctrl')
+            keyboard.release('alt')
+            keyboard.release('left')
+            keyboard.release('right')
+        except Exception:
+            logging.exception("Error releasing keys")
 
-    # 2. Add a short delay to allow the OS to register the 'Key Up' events.
-    time.sleep(0.3)
+        # 2. Add a short delay to allow the OS to register the 'Key Up' events.
+        time.sleep(0.3)
 
     for i, pid in enumerate(TARGET_PIDS):
         # Add a delay between devices (Keyboard is first, Touchpad is second)
         # This prevents signal conflict if one device switches and drops off 
         # while we are trying to talk to the second one.
         if i > 0:
-            time.sleep(0.5)
+            time.sleep(0.3)
 
         try:
             switch_device_host(pid, host_number)
         except Exception as e:
-            print(f"Error switching {pid}: {e}")
+            msg = f"Error switching {pid}: {e}"
+            logging.exception(msg)
 
 def get_screen_size():
     """Returns (width, height) of the primary screen."""
@@ -106,12 +118,11 @@ def check_corner_and_switch():
     
     try:
         x, y = mouse.get_position()
-    except:
+    except Exception as e:
+        logging.exception(f"Error getting mouse position: {e}")
         return
 
     if is_in_corner(x, y, width, height, TRIGGER_CORNER):
-        print(f"Cursor in {TRIGGER_CORNER}! Switching away from Host {THIS_HOST}...")
-        
         # Target is the "other" one. (Assuming 2 hosts: 1 and 2)
         target = 2 if THIS_HOST == 1 else 1
         
@@ -119,17 +130,12 @@ def check_corner_and_switch():
         move_to_safe_corner(width, height, SAFE_CORNER)
         
         # Update state and switch
-        switch_all(target)
+        switch_all(target, release_keys=False)
         
         # Debounce
         time.sleep(2.0)
 
 def main():
-    print("Casa Switcher Service Started.")
-    print("Press Ctrl+Alt+Left for Host 1")
-    print("Press Ctrl+Alt+Right for Host 2")
-    print(f"Or move mouse to {TRIGGER_CORNER} to switch to Other Host.")
-    
     # Register Hotkeys
     keyboard.add_hotkey('ctrl+alt+left', lambda: switch_all(1))
     keyboard.add_hotkey('ctrl+alt+right', lambda: switch_all(2))
@@ -137,10 +143,16 @@ def main():
     # Check for corner trigger periodically
     try:
         while True:
-            check_corner_and_switch()
+            try:
+                check_corner_and_switch()
+            except Exception as e:
+                logging.exception(f"Error in main loop iteration: {e}")
             time.sleep(0.3)
     except KeyboardInterrupt:
-        print("Stopping Service.")
+        logging.critical("Stopping Service.")
+    except Exception as e:
+        msg = f"Fatal error in main: {e}"
+        logging.critical(msg, exc_info=True)
 
 if __name__ == "__main__":
     main()
