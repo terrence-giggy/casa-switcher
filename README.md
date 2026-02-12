@@ -11,7 +11,7 @@ Logi Options+ is great, but sometimes you just want a simple, reliable way to sw
 - **Silent Service**: Runs in the background with no popups.
 - **Generic Support**: Designed for Logitech Casa but works with other HID++ compliant devices (MX Keys, MX Master) if you update the PIDs.
 
-## Installation
+## Installation & Setup
 
 1.  **Install Python**: Make sure Python is installed on your machine.
 2.  **Clone this repo**:
@@ -19,47 +19,33 @@ Logi Options+ is great, but sometimes you just want a simple, reliable way to sw
     git clone https://github.com/your-username/casa-switcher.git
     cd casa-switcher
     ```
-3.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
+3.  **Run `install.bat`**:
+    Double-click `install.bat`. This script will automatically:
+    *   Install Python dependencies.
+    *   Create a default `config.json` if it doesn't exist.
+    *   Create a shortcut in your Startup folder so the service runs on login.
 
-## Setup
+4.  **Start the Service**:
+    You can simply restart your computer, or run `start_casa_service.bat` to start it immediately.
 
-1.  **Find your Device IDs (Optional)**:
-    The script comes pre-configured for the standard Casa Keyboard (`0xB371`) and Touchpad (`0xBB00`). If yours are different, run:
-    ```bash
-    python scan_casa.py
-    ```
-    Update `TARGET_PIDS` in `switch_casa.py` if needed.
+## Configuration
 
-2.  **Run the Service**:
-    ```bash
-    python casa_hotkeys.py
-    ```
+*   **Edit `config.json`**:
+    Modify this file to change the host ID (`1` or `2`), the `trigger_corner` (for mouse switching), or the `safe_corner`.
 
-## Auto-Start on Windows
-
-To have this run automatically when you log in:
-
-1.  Run the included **install script** (PowerShell):
-    ```powershell
-    # Creates a shortcut in your Startup folder
-    $StartPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\CasaSwitcher.lnk"
-    $Target = "$PWD\start_casa_service.bat"
-    $s=(New-Object -COM WScript.Shell).CreateShortcut($StartPath); $s.TargetPath=$Target; $s.Save()
-    ```
-
-    **OR**
-
-2.  **Manually**:
-    *   Press `Win + R`, type `shell:startup`, and hit Enter.
-    *   Drag `start_casa_service.bat` into that folder (create a shortcut).
+*   **Device IDs (Optional)**:
+    The script is pre-configured for the standard Casa Keyboard (`0xB371`) and Touchpad (`0xBB00`). To use other devices, run `python scan_casa.py` to find their IDs, then update `TARGET_PIDS` in `switch_casa.py`.
 
 ## Usage
 
 *   **Ctrl + Alt + Left Arrow**: Switch to Bluetooth Slot 1
 *   **Ctrl + Alt + Right Arrow**: Switch to Bluetooth Slot 2
+
+## Logging & Troubleshooting
+
+The service automatically logs any errors or exceptions to a file named `casa_switcher_errors.log` located in the same directory as the script.
+*   **Log Behavior**: The log file is **cleared every time the service starts**, so it only contains errors from the current session.
+*   **What is logged**: Only errors and critical failures (e.g., config loading issues, HID communication errors).
 
 ## Files
 
