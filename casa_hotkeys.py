@@ -138,7 +138,7 @@ def main():
     try:
         while True:
             check_corner_and_switch()
-            time.sleep(0.1)
+            time.sleep(0.3)
     except KeyboardInterrupt:
         print("Stopping Service.")
 
