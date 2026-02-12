@@ -155,7 +155,9 @@ if __name__ == "__main__":
 
     print(f"Attempting to switch all Casa devices to Host {target_host}...")
     
-    for pid in TARGET_PIDS:
+    for i, pid in enumerate(TARGET_PIDS):
+        if i > 0:
+            time.sleep(0.5)
         switch_device_host(pid, target_host)
 
     print("Done.")
