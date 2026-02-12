@@ -70,7 +70,7 @@ def switch_all(host_number, release_keys=True):
         # This prevents signal conflict if one device switches and drops off 
         # while we are trying to talk to the second one.
         if i > 0:
-            time.sleep(0.3)
+            time.sleep(0.6)
 
         try:
             switch_device_host(pid, host_number)
@@ -147,7 +147,7 @@ def main():
                 check_corner_and_switch()
             except Exception as e:
                 logging.exception(f"Error in main loop iteration: {e}")
-            time.sleep(0.3)
+            time.sleep(0.5)
     except KeyboardInterrupt:
         logging.critical("Stopping Service.")
     except Exception as e:
