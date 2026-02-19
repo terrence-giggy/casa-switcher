@@ -13,7 +13,7 @@ from switch_casa import TARGET_PIDS, switch_device_host
 logging.basicConfig(
     filename='casa_switcher_errors.log',
     filemode='w',
-    level=logging.ERROR,
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
@@ -73,6 +73,8 @@ def switch_all(host_number, release_keys=True):
             time.sleep(0.6)
 
         try:
+            switch_device_host(pid, host_number)
+            time.sleep(0.2)
             switch_device_host(pid, host_number)
         except Exception as e:
             msg = f"Error switching {pid}: {e}"
