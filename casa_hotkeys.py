@@ -65,20 +65,15 @@ def switch_all(host_number, release_keys=True):
         # 2. Add a short delay to allow the OS to register the 'Key Up' events.
         time.sleep(0.3)
 
-    for i, pid in enumerate(TARGET_PIDS):
-        # Add a delay between devices (Keyboard is first, Touchpad is second)
-        # This prevents signal conflict if one device switches and drops off 
-        # while we are trying to talk to the second one.
-        if i > 0:
-            time.sleep(0.6)
-
-        try:
-            switch_device_host(pid, host_number)
-            time.sleep(0.2)
-            switch_device_host(pid, host_number)
-        except Exception as e:
-            msg = f"Error switching {pid}: {e}"
-            logging.exception(msg)
+    for i in range(3):
+        for j, pid in enumerate(TARGET_PIDS):
+            try:
+                switch_device_host(pid, host_number)
+            except Exception as e:
+                msg = f"Error switching {pid}: {e}"
+                logging.exception(msg)
+        
+        time.sleep(0.1)
 
 def get_screen_size():
     """Returns (width, height) of the primary screen."""
